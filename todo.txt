@@ -1,3 +1,0 @@
-Prettify the status
-Make a dashboard screen
-show the tabs vertically and put a title row
