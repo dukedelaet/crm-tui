@@ -30,6 +30,16 @@ var (
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
+type Status struct {
+	Contacts          int     `json:"contacts"`
+	Organizations     int     `json:"organizations"`
+	OpenDeals         int     `json:"open_deals"`
+	DealValue         float64 `json:"deal_value"`
+	OpenTasks         int     `json:"open_tasks"`
+	OverdueTasks      int     `json:"overdue_tasks"`
+	Interactions7Days int     `json:"interactions_7days"`
+}
+
 type Tab int
 
 const (
@@ -231,11 +241,22 @@ func (m *Model) doRefresh(tab Tab) tea.Cmd {
 	switch tab {
 	case TabDashboard:
 		return func() tea.Msg {
-			out, _, err := util.RunCRM("status")
+			out, _, err := util.RunCRM("status", "-f", "json")
 			if err != nil {
 				return DashboardMsg{Err: err.Error()}
 			}
-			return DashboardMsg{Content: out}
+			var statuses []Status
+			if out == "" || out == "[]" {
+				return DashboardMsg{Content: formatStatus(Status{})}
+			}
+			if err := json.Unmarshal([]byte(out), &statuses); err != nil {
+				return DashboardMsg{Err: err.Error()}
+			}
+			s := Status{}
+			if len(statuses) > 0 {
+				s = statuses[0]
+			}
+			return DashboardMsg{Content: formatStatus(s)}
 		}
 	case TabPeople:
 		return func() tea.Msg {
@@ -1083,6 +1104,42 @@ func (m Model) renderDashboard() string {
 		return stylePanel(w).Render(lipgloss.NewStyle().Foreground(textMuted).Italic(true).Render("  Loading dashboard..."))
 	}
 	return stylePanel(w).Render(m.dashStats)
+}
+
+func formatStatus(s Status) string {
+	title := lipgloss.NewStyle().
+		Background(pink).Foreground(bgDark).Bold(true).Padding(0, 1).Render(" Dashboard ")
+
+	contacts := statBox("Contacts", s.Contacts)
+	orgs := statBox("Orgs", s.Organizations)
+	deals := statBox("Deals", s.OpenDeals)
+	value := statBox("$ Value", s.DealValue)
+	tasks := statBox("Tasks", s.OpenTasks)
+	overdue := statBox("Overdue", s.OverdueTasks)
+	recent := statBox("This Week", s.Interactions7Days)
+
+	row1 := lipgloss.JoinHorizontal(lipgloss.Left, contacts, orgs, deals, value)
+	row2 := lipgloss.JoinHorizontal(lipgloss.Left, tasks, overdue, recent)
+
+	divider := lipgloss.NewStyle().Foreground(borderC).Render(strings.Repeat("─", 58))
+
+	return lipgloss.JoinVertical(lipgloss.Left,
+		title,
+		lipgloss.NewStyle().Height(1).Render(""),
+		divider,
+		lipgloss.NewStyle().Height(1).Render(""),
+		row1,
+		lipgloss.NewStyle().Height(1).Render(""),
+		row2,
+	)
+}
+
+func statBox(label string, value any) string {
+	l := lipgloss.NewStyle().
+		Foreground(lavender).Bold(true).Width(14).Padding(0, 1).BorderLeft(true).BorderStyle(lipgloss.NormalBorder()).BorderForeground(borderC)
+	v := lipgloss.NewStyle().
+		Foreground(pink).Bold(true).Width(10).Padding(0, 1).BorderRight(true).BorderStyle(lipgloss.NormalBorder()).BorderForeground(borderC)
+	return lipgloss.JoinHorizontal(lipgloss.Left, l.Render(label), v.Render(fmt.Sprintf("%v", value)))
 }
 
 func (m Model) renderQL() string {
