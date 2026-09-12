@@ -13,7 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/dukedelaet/sophie/util"
+	"github.com/dukedelaet/crm-tui/util"
 )
 
 // ─── Colors (pink & lavender) ────────────────────────────────────────────────

@@ -1,8 +1,8 @@
-# sophie
+# crm-tui
 
 A full-screen TUI for [crm-cli](https://github.com/jdanielnd/crm-cli) built with [Bubble Tea](https://github.com/charmbracelet/bubbletea) and [Lipgloss](https://github.com/charmbracelet/lipgloss).
 
-![sophie screenshot](https://i.imgur.com/placeholder.png)
+![crm-tui screenshot](https://i.imgur.com/placeholder.png)
 
 ## Features
 
@@ -34,10 +34,10 @@ A full-screen TUI for [crm-cli](https://github.com/jdanielnd/crm-cli) built with
 
 ```bash
 # From source
-go install github.com/dukedelaet/sophie@latest
+go install github.com/dukedelaet/crm-tui@latest
 
 # Or build locally
-go build -o sophie ./cmd/
+go build -o crm-tui ./cmd/
 ```
 
 Requires [crm-cli](https://github.com/jdanielnd/crm-cli) to be installed and on your PATH.
@@ -45,7 +45,7 @@ Requires [crm-cli](https://github.com/jdanielnd/crm-cli) to be installed and on 
 ## Usage
 
 ```bash
-sophie
+crm-tui
 ```
 
 Run from a terminal with crm-cli configured. Your CRM data lives in `~/.crm/crm.db`.

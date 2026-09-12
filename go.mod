@@ -1,4 +1,4 @@
-module github.com/dukedelaet/sophie
+module github.com/dukedelaet/crm-tui
 
 go 1.24.2
 
