@@ -1013,7 +1013,7 @@ func (m Model) rebuildInteractions() Model {
 
 func (m Model) View() string {
 	var b strings.Builder
-	b.WriteString(lipgloss.NewStyle().Background(pink).Foreground(bgDark).Bold(true).Padding(0, 2).Render("  sophie — crm-tui  "))
+	b.WriteString(lipgloss.NewStyle().Background(pink).Foreground(bgDark).Bold(true).Padding(0, 2).Render("  crm-tui  "))
 	b.WriteString("\n")
 	b.WriteString(lipgloss.NewStyle().Width(m.width).Render(
 		lipgloss.JoinHorizontal(lipgloss.Left,
