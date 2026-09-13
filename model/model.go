@@ -128,12 +128,16 @@ type listItem struct {
 }
 
 func (i listItem) FilterValue() string { return i.title }
+func (i listItem) Title() string       { return i.title }
+func (i listItem) Description() string { return "" }
 
 type qItem struct {
 	entry QuickLaunchEntry
 }
 
-func (i qItem) FilterValue() string { return i.entry.Label + " " + i.entry.Command }
+func (i qItem) FilterValue() string  { return i.entry.Label + " " + i.entry.Command }
+func (i qItem) Title() string        { return i.entry.Label }
+func (i qItem) Description() string  { return i.entry.Shortcut + "  ·  " + i.entry.Command }
 
 // ─── Model ────────────────────────────────────────────────────────────────────
 
@@ -482,11 +486,11 @@ func (m Model) updateMain(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "6":
 		m.tab, m.lastErr = TabDashboard, ""
 		return m, m.refreshTabCmd()
-	case "l", "tab":
+	case "l", "tab", "right":
 		m.tab = (m.tab + 1) % 6
 		m.lastErr = ""
 		return m, m.refreshTabCmd()
-	case "h", "shift+tab":
+	case "h", "shift+tab", "left":
 		m.tab = (m.tab + 5) % 6
 		m.lastErr = ""
 		return m, m.refreshTabCmd()
@@ -1275,7 +1279,7 @@ func (m Model) footer() string {
 		Width(m.width).
 		Render(lipgloss.JoinHorizontal(lipgloss.Center,
 			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("↑↓")+" Navigate  ",
-			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("H/L")+" Tabs  ",
+			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("←/→")+" Tabs  ",
 			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("N")+" New  ",
 			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("E")+" Edit  ",
 			lipgloss.NewStyle().Foreground(pink).Bold(true).Render("D")+" Delete  ",
