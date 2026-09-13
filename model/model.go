@@ -218,7 +218,7 @@ func (m *Model) populateQL() {
 	for i, it := range m.quickLaunchItems {
 		items[i] = it
 	}
-	m.quickLaunch = list.New(items, m.delegate, max(m.width-10, 10), 18)
+	m.quickLaunch = list.New(items, m.delegate, m.contentWidth()+2, 18)
 }
 
 // ─── Refresh ──────────────────────────────────────────────────────────────────
@@ -245,18 +245,7 @@ func (m *Model) doRefresh(tab Tab) tea.Cmd {
 			if err != nil {
 				return DashboardMsg{Err: err.Error()}
 			}
-			var statuses []Status
-			if out == "" || out == "[]" {
-				return DashboardMsg{Content: formatStatus(Status{})}
-			}
-			if err := json.Unmarshal([]byte(out), &statuses); err != nil {
-				return DashboardMsg{Err: err.Error()}
-			}
-			s := Status{}
-			if len(statuses) > 0 {
-				s = statuses[0]
-			}
-			return DashboardMsg{Content: formatStatus(s)}
+			return DashboardMsg{Content: out}
 		}
 	case TabPeople:
 		return func() tea.Msg {
@@ -421,7 +410,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) resize() Model {
-	w := max(m.width-4, 10)
+	w := m.contentWidth()
 	m.peopleTable = table.New(
 		table.WithColumns(m.peopleTable.Columns()),
 		table.WithRows(m.peopleTable.Rows()),
@@ -462,7 +451,7 @@ func (m Model) resize() Model {
 		table.WithFocused(true),
 	)
 	initTableStyles(&m.logsTable)
-	m.quickLaunch = list.New(m.quickLaunch.Items(), m.delegate, max(m.width-10, 10), 18)
+	m.quickLaunch = list.New(m.quickLaunch.Items(), m.delegate, m.contentWidth()+2, 18)
 	return m
 }
 
@@ -954,7 +943,7 @@ func (m Model) rebuildPeople() Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().Background(lavender).Foreground(bgDark).Bold(true)
 	m.delegate = d
-	m.personList = list.New(items, m.delegate, max(m.width-6, 10), 15)
+	m.personList = list.New(items, m.delegate, m.contentWidth(), 15)
 	m.peopleTable = newTable(
 		[]table.Column{{Title: "ID", Width: 6}, {Title: "Name", Width: 20}, {Title: "Email", Width: 25}, {Title: "Phone", Width: 15}, {Title: "Title", Width: 15}, {Title: "Tags", Width: 15}},
 		personRows(m.people),
@@ -970,7 +959,7 @@ func (m Model) rebuildOrgs() Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().Background(lavender).Foreground(bgDark).Bold(true)
 	m.delegate = d
-	m.orgList = list.New(items, m.delegate, max(m.width-6, 10), 15)
+	m.orgList = list.New(items, m.delegate, m.contentWidth(), 15)
 	m.orgsTable = newTable(
 		[]table.Column{{Title: "ID", Width: 6}, {Title: "Name", Width: 25}, {Title: "Domain", Width: 25}, {Title: "Industry", Width: 20}},
 		orgRows(m.orgs),
@@ -986,7 +975,7 @@ func (m Model) rebuildDeals() Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().Background(lavender).Foreground(bgDark).Bold(true)
 	m.delegate = d
-	m.dealList = list.New(items, m.delegate, max(m.width-6, 10), 15)
+	m.dealList = list.New(items, m.delegate, m.contentWidth(), 15)
 	m.dealsTable = newTable(
 		[]table.Column{{Title: "ID", Width: 6}, {Title: "Title", Width: 25}, {Title: "Value", Width: 12}, {Title: "Person", Width: 10}, {Title: "Stage", Width: 12}},
 		dealRows(m.deals),
@@ -1006,7 +995,7 @@ func (m Model) rebuildTasks() Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().Background(lavender).Foreground(bgDark).Bold(true)
 	m.delegate = d
-	m.taskList = list.New(items, m.delegate, max(m.width-6, 10), 15)
+	m.taskList = list.New(items, m.delegate, m.contentWidth(), 15)
 	m.tasksTable = newTable(
 		[]table.Column{{Title: "ID", Width: 6}, {Title: "Title", Width: 30}, {Title: "Person", Width: 10}, {Title: "Due", Width: 12}, {Title: "Priority", Width: 10}, {Title: "Done", Width: 6}},
 		taskRows(m.tasks),
@@ -1022,7 +1011,7 @@ func (m Model) rebuildInteractions() Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = lipgloss.NewStyle().Background(lavender).Foreground(bgDark).Bold(true)
 	m.delegate = d
-	m.logList = list.New(items, m.delegate, max(m.width-6, 10), 15)
+	m.logList = list.New(items, m.delegate, m.contentWidth(), 15)
 	m.logsTable = newTable(
 		[]table.Column{{Title: "ID", Width: 6}, {Title: "Type", Width: 8}, {Title: "Subject", Width: 30}, {Title: "Person", Width: 10}, {Title: "Date", Width: 18}},
 		logRows(m.interactions),
@@ -1030,61 +1019,109 @@ func (m Model) rebuildInteractions() Model {
 	return m
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const sidebarWidth = 16
+
+func (m Model) contentWidth() int {
+	return max(m.width-sidebarWidth-4, 10)
+}
+
 // ─── View ─────────────────────────────────────────────────────────────────────
 
 func (m Model) View() string {
-	var b strings.Builder
-	b.WriteString(lipgloss.NewStyle().Background(pink).Foreground(bgDark).Bold(true).Padding(0, 2).Render("  crm-tui  "))
-	b.WriteString("\n")
-	b.WriteString(lipgloss.NewStyle().Width(m.width).Render(
-		lipgloss.JoinHorizontal(lipgloss.Left,
-			tabStyle(m.tab == TabDashboard).Render(" Status "),
-			tabStyle(m.tab == TabPeople).Render(" People "),
-			tabStyle(m.tab == TabOrgs).Render(" Orgs "),
-			tabStyle(m.tab == TabDeals).Render(" Deals "),
-			tabStyle(m.tab == TabTasks).Render(" Tasks "),
-			tabStyle(m.tab == TabInteractions).Render(" Logs "),
-		),
-	))
-	b.WriteString("\n")
-	if m.lastErr != "" {
-		b.WriteString(lipgloss.NewStyle().Background(accentRed).Foreground(bgDark).Padding(0, 1).Render(" !  "+m.lastErr)+"\n")
-		m.lastErr = ""
-	}
-	b.WriteString(m.renderContent())
-	b.WriteString("\n")
-	b.WriteString(m.footer())
-	return b.String()
+	contentW := max(m.width-sidebarWidth-2, 10)
+
+	sidebar := m.renderSidebar()
+	content := m.renderContent(contentW)
+	footer := m.footer()
+
+	return lipgloss.JoinHorizontal(lipgloss.Left, sidebar, content) +
+		lipgloss.NewStyle().Width(m.width).Render(footer) + "\n"
 }
 
-func (m Model) renderContent() string {
+func (m Model) renderSidebar() string {
+	title := lipgloss.NewStyle().
+		Background(pink).Foreground(bgDark).Bold(true).Padding(0, 1).Width(sidebarWidth).Render(" crm-tui ")
+
+	divider := lipgloss.NewStyle().Width(sidebarWidth).Foreground(borderC).Render("─")
+
+	tabs := []struct {
+		tab  Tab
+		name string
+	}{
+		{TabDashboard, "Status"},
+		{TabPeople, "People"},
+		{TabOrgs, "Orgs"},
+		{TabDeals, "Deals"},
+		{TabTasks, "Tasks"},
+		{TabInteractions, "Logs"},
+	}
+
+	var lines []string
+	lines = append(lines, title, divider)
+	for _, t := range tabs {
+		active := m.tab == t.tab
+		s := lipgloss.NewStyle().Width(sidebarWidth).Padding(0, 1)
+		if active {
+			s = s.Background(lavender).Foreground(bgDark).Bold(true)
+		} else {
+			s = s.Foreground(textMuted)
+		}
+		prefix := " "
+		if active {
+			prefix = "▸ "
+		}
+		lines = append(lines, s.Render(prefix+t.name))
+	}
+
+	return lipgloss.NewStyle().
+		Background(bgDark).
+		Width(sidebarWidth).
+		Render(lipgloss.JoinVertical(lipgloss.Left, lines...))
+}
+
+func (m Model) renderContent(w int) string {
+	if m.lastErr != "" {
+		m.lastErr = "" // handled inside content renderers now
+	}
+
+	var main string
 	switch m.modal {
 	case ModalQuickLaunch:
-		return m.renderQL()
+		main = m.renderQL(w)
 	case ModalPersonForm, ModalOrgForm, ModalDealForm, ModalTaskForm, ModalInteractionForm, ModalConfirmDelete:
-		return m.renderModal()
+		main = m.renderModal(w)
 	case ModalDetail:
-		return m.renderDetail()
+		main = m.renderDetail(w)
+	default:
+		switch m.tab {
+		case TabDashboard:
+			main = m.renderDashboard(w)
+		case TabPeople:
+			main = m.renderTable("people", w, m.peopleTable.View(), len(m.people) == 0)
+		case TabOrgs:
+			main = m.renderTable("orgs", w, m.orgsTable.View(), len(m.orgs) == 0)
+		case TabDeals:
+			main = m.renderTable("deals", w, m.dealsTable.View(), len(m.deals) == 0)
+		case TabTasks:
+			main = m.renderTable("tasks", w, m.tasksTable.View(), len(m.tasks) == 0)
+		case TabInteractions:
+			main = m.renderTable("logs", w, m.logsTable.View(), len(m.interactions) == 0)
+		default:
+			main = m.renderDashboard(w)
+		}
 	}
-	switch m.tab {
-	case TabDashboard:
-		return m.renderDashboard()
-	case TabPeople:
-		return m.renderTable("people", m.peopleTable.View(), len(m.people) == 0)
-	case TabOrgs:
-		return m.renderTable("orgs", m.orgsTable.View(), len(m.orgs) == 0)
-	case TabDeals:
-		return m.renderTable("deals", m.dealsTable.View(), len(m.deals) == 0)
-	case TabTasks:
-		return m.renderTable("tasks", m.tasksTable.View(), len(m.tasks) == 0)
-	case TabInteractions:
-		return m.renderTable("logs", m.logsTable.View(), len(m.interactions) == 0)
+
+	if m.lastErr != "" {
+		errBanner := lipgloss.NewStyle().Background(accentRed).Foreground(bgDark).Padding(0, 1).Width(w).Render(" !  " + m.lastErr)
+		m.lastErr = ""
+		return lipgloss.JoinVertical(lipgloss.Left, errBanner, main)
 	}
-	return m.renderDashboard()
+	return main
 }
 
-func (m Model) renderTable(name, content string, empty bool) string {
-	w := max(m.width-4, 10)
+func (m Model) renderTable(name string, w int, content string, empty bool) string {
 	if m.loading {
 		return stylePanel(w).Render(lipgloss.NewStyle().Foreground(textMuted).Italic(true).Render("  Loading "+name+"..."))
 	}
@@ -1098,15 +1135,18 @@ func (m Model) renderTable(name, content string, empty bool) string {
 	return stylePanel(w).Render(content)
 }
 
-func (m Model) renderDashboard() string {
-	w := max(m.width-4, 10)
+func (m Model) renderDashboard(w int) string {
 	if m.loading && m.dashStats == "" {
 		return stylePanel(w).Render(lipgloss.NewStyle().Foreground(textMuted).Italic(true).Render("  Loading dashboard..."))
 	}
-	return stylePanel(w).Render(m.dashStats)
+	var s Status
+	if m.dashStats != "" {
+		json.Unmarshal([]byte(m.dashStats), &s)
+	}
+	return stylePanel(w).Render(formatStatus(s, w))
 }
 
-func formatStatus(s Status) string {
+func formatStatus(s Status, w int) string {
 	title := lipgloss.NewStyle().
 		Background(pink).Foreground(bgDark).Bold(true).Padding(0, 1).Render(" Dashboard ")
 
@@ -1121,7 +1161,7 @@ func formatStatus(s Status) string {
 	row1 := lipgloss.JoinHorizontal(lipgloss.Left, contacts, orgs, deals, value)
 	row2 := lipgloss.JoinHorizontal(lipgloss.Left, tasks, overdue, recent)
 
-	divider := lipgloss.NewStyle().Foreground(borderC).Render(strings.Repeat("─", 58))
+	divider := lipgloss.NewStyle().Foreground(borderC).Render(strings.Repeat("─", w-4))
 
 	return lipgloss.JoinVertical(lipgloss.Left,
 		title,
@@ -1142,7 +1182,7 @@ func statBox(label string, value any) string {
 	return lipgloss.JoinHorizontal(lipgloss.Left, l.Render(label), v.Render(fmt.Sprintf("%v", value)))
 }
 
-func (m Model) renderQL() string {
+func (m Model) renderQL(w int) string {
 	title := lipgloss.NewStyle().Background(pink).Foreground(bgDark).Bold(true).Padding(0, 1).Render(" Command Palette  (ctrl+p)")
 	search := m.quickLaunchQuery.View()
 	lv := m.quickLaunch.View()
@@ -1152,11 +1192,11 @@ func (m Model) renderQL() string {
 		Background(bgDark).
 		BorderForeground(borderC).
 		Padding(1, 2).
-		Width(min(m.width-4, 70)).
+		Width(min(w, 70)).
 		Render(lipgloss.JoinVertical(lipgloss.Left, title, "", search, "", lv, "", hint))
 }
 
-func (m Model) renderModal() string {
+func (m Model) renderModal(w int) string {
 	if len(m.modalFields) == 0 {
 		return ""
 	}
@@ -1188,11 +1228,11 @@ func (m Model) renderModal() string {
 		Background(bgDark).
 		BorderForeground(borderC).
 		Padding(1, 2).
-		Width(min(m.width-4, 60)).
+		Width(min(w, 60)).
 		Render(lipgloss.JoinVertical(lipgloss.Left, lines...))
 }
 
-func (m Model) renderDetail() string {
+func (m Model) renderDetail(w int) string {
 	var content string
 	switch m.tab {
 	case TabPeople:
@@ -1225,7 +1265,7 @@ func (m Model) renderDetail() string {
 		Background(bgDark).
 		BorderForeground(borderC).
 		Padding(1, 2).
-		Width(min(m.width-4, 50)).
+		Width(min(w, 50)).
 		Render(content)
 }
 

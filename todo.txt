@@ -1,0 +1,4 @@
+x 2026-09-12 Prettify the status
+Make a dashboard screen
+show the tabs vertically and put a title row
+Make a nickname field in the people thingie
